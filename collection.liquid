@@ -1,0 +1,25 @@
+<section>
+    <div class="prose">
+        <h1>{{ meta.h1 }}</h1>
+        <div class="{{ collection.format }}">{{ collection.html }}</div>       
+    </div>
+    
+    {% if settings.filter_orientation == "horizontal" %}
+        <div id="product-filter-wrapper" class="flex flex-col gap-4">
+            
+    {% elsif settings.filter_orientation == "vertical" %}
+        <div id="product-filter-wrapper" class="flex flex-col lg:flex-row gap-4">
+            
+    {% endif %}
+    
+            <div id="filter" class="mt-8">
+        	    {% include 'productFilter' %}
+        	</div>
+        	    
+        	<div class="mt-10 grid {{ settings.colProductCount | def:"grid-cols-2 md:grid-cols-2 lg:grid-cols-4" }} gap-4">
+        	{% for product in collection.products %}
+        	    {% include 'productCard' %}
+        	{% endfor %}
+    	    </div>
+        </div>
+</section>
