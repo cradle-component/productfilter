@@ -1,0 +1,483 @@
+{% assign max_price = 0 %}
+{% for product in collections[collection].products %}
+    {% if product.priceMax > max_price %}
+        {% assign max_price = product.priceMax %}
+    {% endif %}
+{% endfor %}
+
+
+{% assign selected_tags_string = "," %}
+{% assign selected_vendors_string = "," %}
+{% assign selected_price_minimum = "" %}
+{% assign selected_price_maximum = "" %}
+
+{% assign query_parameters = request.query | split: "&" %}
+{% for parameter in query_parameters %}
+  {% if parameter == "" %}{% continue %}{% endif %}
+  {% assign key_value_pair = parameter | split: "=" %}
+  {% assign parameter_key = key_value_pair[0] | downcase %}
+  {% assign parameter_value = key_value_pair[1] | default: "" %}
+  {% assign parameter_value = parameter_value | replace: "%2B", "+" | url_decode | strip %}
+
+  {% case parameter_key %}
+    {% when "tags" %}
+      {% assign tag_parts = parameter_value | split: "," %}
+      {% for tag_part in tag_parts %}
+        {% assign cleaned_tag = tag_part | strip %}
+        {% unless cleaned_tag == "" %}
+          {% assign wrapped_tag = "," | append: cleaned_tag | append: "," %}
+          {% unless selected_tags_string contains wrapped_tag %}
+            {% assign selected_tags_string = selected_tags_string | append: cleaned_tag | append: "," %}
+          {% endunless %}
+        {% endunless %}
+      {% endfor %}
+    {% when "vendor" %}
+      {% assign vendor_parts = parameter_value | split: "," %}
+      {% for vendor_part in vendor_parts %}
+        {% assign cleaned_vendor = vendor_part | strip %}
+        {% unless cleaned_vendor == "" %}
+          {% assign wrapped_vendor = "," | append: cleaned_vendor | append: "," %}
+          {% unless selected_vendors_string contains wrapped_vendor %}
+            {% assign selected_vendors_string = selected_vendors_string | append: cleaned_vendor | append: "," %}
+          {% endunless %}
+        {% endunless %}
+      {% endfor %}
+    {% when "price-min" %}
+      {% assign selected_price_minimum = parameter_value %}
+    {% when "price-max" %}
+      {% assign selected_price_maximum = parameter_value %}
+  {% endcase %}
+{% endfor %}
+
+{% if settings.filter_orientation == "vertical" %} 
+    <form action="{{ collection.url }}" method="get" id="product-filters" class="filters flex flex-wrap" >
+{% elsif settings.filter_orientation == "horizontal" %}
+    <form action="{{ collection.url }}" method="get" id="product-filters" class="filters flex flex-col flex-wrap" >
+{% endif %}    
+    
+    <div id="tags-wrapper">
+        <fieldset class="flex {% if settings.filter_orientation == "vertical"%}flex-col{% endif %} mb-2">
+           <legend class="flex gap-2 items-center">
+               <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24" height="24" viewBox="0 0 256 256" xml:space="preserve">
+                <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+                	<path d="M 87 77.103 H 54.88 c -1.657 0 -3 -1.343 -3 -3 s 1.343 -3 3 -3 H 87 c 1.657 0 3 1.343 3 3 S 88.657 77.103 87 77.103 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+                	<path d="M 54.114 18.898 H 3 c -1.657 0 -3 -1.343 -3 -3 s 1.343 -3 3 -3 h 51.114 c 1.657 0 3 1.343 3 3 S 55.771 18.898 54.114 18.898 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+                	<path d="M 87 48 H 31.097 c -1.657 0 -3 -1.343 -3 -3 c 0 -1.657 1.343 -3 3 -3 H 87 c 1.657 0 3 1.343 3 3 C 90 46.657 88.657 48 87 48 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+                	<path d="M 35.885 77.103 H 3 c -1.657 0 -3 -1.343 -3 -3 s 1.343 -3 3 -3 h 32.885 c 1.657 0 3 1.343 3 3 S 37.542 77.103 35.885 77.103 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+                	<path d="M 12.868 48 H 3 c -1.657 0 -3 -1.343 -3 -3 c 0 -1.657 1.343 -3 3 -3 h 9.868 c 1.657 0 3 1.343 3 3 C 15.868 46.657 14.524 48 12.868 48 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+                	<path d="M 87 18.898 H 72.521 c -1.657 0 -3 -1.343 -3 -3 s 1.343 -3 3 -3 H 87 c 1.657 0 3 1.343 3 3 S 88.657 18.898 87 18.898 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+                	<path d="M 54.114 86.217 H 35.885 c -1.657 0 -3 -1.343 -3 -3 V 64.987 c 0 -1.657 1.343 -3 3 -3 h 18.229 c 1.657 0 3 1.343 3 3 v 18.229 C 57.114 84.874 55.771 86.217 54.114 86.217 z M 38.885 80.217 h 12.229 V 67.987 H 38.885 V 80.217 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+                	<path d="M 31.097 57.114 H 12.868 c -1.657 0 -3 -1.343 -3 -3 V 35.885 c 0 -1.657 1.343 -3 3 -3 h 18.229 c 1.657 0 3 1.343 3 3 v 18.229 C 34.097 55.771 32.754 57.114 31.097 57.114 z M 15.868 51.114 h 12.229 V 38.885 H 15.868 V 51.114 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+                	<path d="M 72.344 28.013 H 54.114 c -1.657 0 -3 -1.343 -3 -3 V 6.783 c 0 -1.657 1.343 -3 3 -3 h 18.229 c 1.657 0 3 1.343 3 3 v 18.229 C 75.344 26.669 74.001 28.013 72.344 28.013 z M 57.114 22.013 h 12.229 V 9.783 H 57.114 V 22.013 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+                </g>
+                </svg>
+               Filter</legend>
+            {% assign used_tags_tracker = "," %}
+    
+            {% for tag in collections[collection].productTags %}
+              {% assign normalized_tag = tag | downcase | strip %}
+              {% assign wrapped_tag = "," | append: normalized_tag | append: "," %}
+    
+              {% unless used_tags_tracker contains wrapped_tag %}
+                {% assign search_pattern = "," | append: normalized_tag | append: "," %}
+                <label class="capitalize p-2"> 
+                  <input type="checkbox" name="tags" value="{{ normalized_tag }}" {% if selected_tags_string contains search_pattern %}checked{% endif %}>
+                  {{ normalized_tag | t:"collection" }}
+                </label>
+    
+                {% assign used_tags_tracker = used_tags_tracker | append: normalized_tag | append: "," %}
+              {% endunless %}
+            {% endfor %}
+        </fieldset>
+    </div>
+    
+    {%if settings.show_vendor_filter %}
+    <div id="vendor-wrapper">
+        <fieldset class="flex flex-col mb-2">
+           <legend>Vendors</legend>
+    
+            {% for vendor in vendors %}
+                {% assign vendor_value = vendor.name | strip %}
+                {% assign vendor_search_pattern = "," | append: vendor_value | append: "," %}
+                <label class="capitalize p-2">
+                  <input type="checkbox" name="vendor" value="{{ vendor_value | split: " " | join: "+" }}" {% if selected_vendors_string contains vendor_search_pattern %}checked{% endif %}>
+                  {{ vendor.name | t:"collection" }}
+                </label>
+            {% endfor %}
+        </fieldset>
+    </div>
+    {% endif %}
+    <div id="price-input" class="flex flex-col justify-between">
+        {%if settings.show_price_range_filter %}
+        <h2>Pris</h2>
+        <div class="price-filter mb-2 price-filter--nojs">
+            <label>
+                    <input class="nojs-input" placeholder="MIN" type="number" name="price-min" min="0" value="{{ selected_price_minimum }}">
+            </label>
+            <span>-</span>
+            <label>
+                    <input class="nojs-input" placeholder="MAX" type="number" name="price-max" min="0" value="{{ selected_price_maximum }}">
+            </label>
+        </div>
+        
+        
+        <div class="price-range-wrapper price-filter--js">
+            
+              <div class="price-range-input">
+                <div class="field">
+                  <input id="price-range-minimum" type="number" class="input-min" placeholder="MIN" value="{{ selected_price_minimum }}">
+                </div>
+                <span>-</span>
+                <div class="field">
+                  <input id="price-range-maximum" type="number" class="input-max" placeholder="MAX" value="{{ selected_price_maximum }}">
+                </div>
+              </div>  
+              <div class="slider">
+                <div class="progress"></div> 
+              </div>
+              <div class="range-input">
+                <input type="range" class="range-min" min="0" max="{{ max_price | divided_by: 1000 }}" step="1">
+                <input type="range" class="range-max" min="0" max="{{ max_price | divided_by: 1000 }}" step="1">
+              </div>
+        </div>
+        {% endif %}
+        
+        <div id="filter-buttons" class="flex justify-between pb-4">
+            <button type="submit" class="btn">Filtrera</button>
+            <a href="{{ request.path }}" class="btn">{{ 'Rensa filter' | t:'collection' }}</a>
+        </div>
+    </div>
+</form>
+
+<style>
+    <!-- price range slider styling -->
+    .price-range-wrapper {
+        max-width: 300px;
+    }
+    
+    .price-range-input {
+      width: 100%;
+      display: flex;
+      gap: 3rem;
+      margin: 30px 0 35px;
+      
+      span {
+        font-size: 2rem;
+        line-height: 130%;
+      }
+    }
+    .price-range-input .field {
+      display: flex;
+      width: 100%;
+      height: 45px;
+      align-items: center;
+    }
+    .field input, price-filter--nojs label input {
+      width: 100%;
+      height: 100%;
+      outline: none;
+      font-size: 1.15rem;
+      border-radius: 5px;
+      text-align: center;
+      border: 1px solid #999;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+    .price-input .separator {
+      width: 130px;
+      display: flex;
+      font-size: 19px;
+      align-items: center;
+      justify-content: center;
+    }
+    .slider {
+      height: 5px;
+      position: relative;
+      background: #ddd;
+      border-radius: 5px;
+    }
+    .slider .progress {
+      height: 100%;
+      left: 0;
+      right: 0;
+      position: absolute;
+      border-radius: 5px;
+      background: #17a2b8;
+    }
+    .range-input {
+      position: relative;
+    }
+    .range-input input {
+      position: absolute;
+      width: 100%;
+      height: 5px;
+      top: -5px;
+      background: none;
+      pointer-events: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      height: 17px;
+      width: 17px;
+      border-radius: 50%;
+      background: #17a2b8;
+      pointer-events: auto;
+      -webkit-appearance: none;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.05);
+    }
+    input[type="range"]::-moz-range-thumb {
+      height: 17px;
+      width: 17px;
+      border: none;
+      border-radius: 50%;
+      background: #17a2b8;
+      pointer-events: auto;
+      -moz-appearance: none;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    
+    .js .price-filter--nojs {
+      display: none;
+    }
+    
+    .js .price-filter--js {
+      display: block;
+    }
+    
+    .price-filter--js {
+      display: none;
+    }
+    <!-- END price range slider styling -->
+    
+    
+    #product-filters {
+        gap: 0;
+        .price-filter { 
+            label {
+              display: grid;
+              grid-template-columns: 80px 1fr;
+              align-items: center;
+              gap: 0.5rem;
+            }
+        
+            input {
+              margin-left: 0;
+              width: 100%; 
+            }
+        }
+    }
+    
+    #price-input > h2 {
+        font-size: 1.25rem;
+        text-align: center;
+    }
+    
+    #filter label:has(input[type="checkbox"]):hover {
+        cursor: pointer;
+        background-color: #f3f3f3;
+    }
+    
+    #tags-wrapper, #vendor-wrapper {
+        width: 100%;
+        height: fit-content;
+        
+        legend {
+            font-size: 1.25rem;
+            width: 100%;
+            padding: .5rem 0 .5rem .5rem;
+            margin-bottom: .75rem;
+            background: #ffffff00;
+            box-shadow: 1px 1px 3px #00000020;
+        }
+    }
+    
+    {% if settings.filter_orientation == "horizontal" %}
+        #filter-buttons {
+            margin-top: 1rem;
+            padding: 0;
+        }
+        
+        .price-range-input {
+            margin-block: 15px;
+        }
+        
+        #product-filters {
+            gap: 2rem;
+        }
+        
+        #tags-wrapper, #vendor-wrapper {
+            margin-right: 1rem;
+            min-width: 13rem;
+            max-width: fit-content;
+        }
+        
+        #price-input {
+            max-width: 300px;
+            margin-top: 1rem;
+        }
+    
+    {% elsif settings.filter_orientation == "vertical" %}
+        #product-filters {
+            gap: 0;
+            min-width: 16rem;
+        }
+        
+        #filter-buttons {
+            margin-top: 1rem;
+        }
+        
+        #tags-wrapper, #vendor-wrapper {
+            min-width: 13rem;
+            max-width: fit-content;
+        }
+        
+        #price-input {
+            max-width: 300px;
+            margin-top: 1rem;
+        }
+        
+        #filter {
+            padding: 1rem;
+        }
+        
+        .price-filter--nojs {
+            display: flex; 
+            position: relative;
+            gap: 3rem;
+            
+            span {
+                font-size: 2rem;
+                line-height: 130%;
+            }
+        }
+        
+        .nojs-input {
+            width: 100%;
+            height: 45px;
+            outline: none;
+            font-size: 1.15rem;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #999;
+            -moz-appearance: textfield;
+            
+        }
+    {% endif %}
+    
+
+</style>
+
+
+<script>
+  (function() {
+    'use strict';
+    
+    const form = document.getElementById('product-filters');
+    if (!form) return;
+    
+    const rangeMin = form.querySelector('.range-min');
+    const rangeMax = form.querySelector('.range-max');
+    const inputMin = form.querySelector('.input-min');
+    const inputMax = form.querySelector('.input-max');
+    const priceInputs = form.querySelectorAll('.price-range-input input');
+    const rangeInputs = form.querySelectorAll('.range-input input');
+    const rangeProgress = form.querySelector('.slider .progress');
+    
+    form.addEventListener('submit', function(e) {
+    
+      const minDefault = 0;
+      const maxDefault = parseInt(rangeMax.getAttribute('max')) || 0;
+    
+      if (inputMin?.value) rangeMin.value = inputMin.value;
+      if (inputMax?.value) rangeMax.value = inputMax.value;
+
+      if(parseInt(rangeMin.value) === minDefault) {
+        rangeMin.removeAttribute('name');
+      }
+      
+      if(parseInt(rangeMax.value) === maxDefault) {
+        rangeMax.removeAttribute('name');
+      }
+     
+    });
+    
+    // Ta bort noJS name-attribut
+    document.querySelectorAll('.price-filter--nojs input[name]').forEach(input => {
+      input.removeAttribute('name');
+    });
+    
+    
+    document.documentElement.classList.add('js');
+    if (rangeMin) rangeMin.setAttribute('name', 'price-min');
+    if (rangeMax) rangeMax.setAttribute('name', 'price-max');
+    
+    // Price range initialization och event listeners
+    if (rangeInputs.length === 2 && priceInputs.length === 2 && rangeProgress) {
+    
+     // Ändra PRICE_GAP värde om du vill minska avståndet mellan minimum- och maximum-pris 
+      const PRICE_GAP = 500;
+      
+      const updateRangeFromInputs = () => {
+        const minVal = parseInt(priceInputs[0].value) || parseInt(rangeInputs[0].min);
+        const maxVal = parseInt(priceInputs[1].value) || parseInt(rangeInputs[1].max);
+        
+        rangeInputs[0].value = minVal;
+        rangeInputs[1].value = maxVal;
+        
+        updateProgress(minVal, maxVal);
+      };
+      
+      const updateProgress = (minVal, maxVal) => {
+        rangeProgress.style.left = (minVal / rangeInputs[0].max) * 100 + '%';
+        rangeProgress.style.right = 100 - (maxVal / rangeInputs[1].max) * 100 + '%';
+      };
+      
+      updateRangeFromInputs();
+      
+      priceInputs.forEach((input, index) => {
+        input.addEventListener('input', () => {
+          const minPrice = parseInt(priceInputs[0].value) || 0;
+          const maxPrice = parseInt(priceInputs[1].value) || 0;
+          
+          if (maxPrice - minPrice >= PRICE_GAP && maxPrice <= parseInt(rangeInputs[1].max)) {
+            if (input.classList.contains('input-min')) {
+              rangeInputs[0].value = minPrice;
+              updateProgress(minPrice, maxPrice);
+            } else {
+              rangeInputs[1].value = maxPrice;
+              updateProgress(minPrice, maxPrice);
+            }
+          }
+        });
+      });
+      
+      // Range inputs event listener
+      const handleRangeInput = (e) => {
+        const minVal = parseInt(rangeInputs[0].value);
+        const maxVal = parseInt(rangeInputs[1].value);
+        
+        if (maxVal - minVal < PRICE_GAP) {
+          if (e.target.classList.contains('range-min')) {
+            rangeInputs[0].value = maxVal - PRICE_GAP;
+          } else {
+            rangeInputs[1].value = minVal + PRICE_GAP;
+          }
+          return;
+        }
+        
+        priceInputs[0].value = minVal;
+        priceInputs[1].value = maxVal;
+        updateProgress(minVal, maxVal);
+      };
+      
+      rangeInputs.forEach(input => {
+        input.addEventListener('input', handleRangeInput);
+      });
+    }
+  })();
+</script>
