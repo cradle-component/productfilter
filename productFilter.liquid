@@ -137,9 +137,7 @@
         {% endif %}
         
         <div id="filter-buttons" class="flex justify-between pb-4">
-            {% if settings.filter_orientation == "vertical" %}
-            <button type="submit" class="btn">Filtrera</button>
-            {% endif %}
+            <button id="submit-filter" type="submit" class="btn">Filtrera</button>
             <a href="{{ request.path }}" class="btn">{{ 'Rensa filter' | t:'collection' }}</a>
         </div>
     </div>
@@ -489,6 +487,8 @@
 
     }, DEBOUNCE_DELAY);
   });
+  
+  document.querySelector("#submit-filter").classList.add("hidden");
 
   {% endif %}
 
@@ -562,6 +562,8 @@
       input.addEventListener('input', handleRangeInput);
     });
   }
+  
+  
 
 })();
 </script>
