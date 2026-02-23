@@ -370,110 +370,198 @@
 
 
 <script>
-  (function() {
-    'use strict';
-    
-    const form = document.getElementById('product-filters');
-    if (!form) return;
-    
-    const rangeMin = form.querySelector('.range-min');
-    const rangeMax = form.querySelector('.range-max');
-    const inputMin = form.querySelector('.input-min');
-    const inputMax = form.querySelector('.input-max');
-    const priceInputs = form.querySelectorAll('.price-range-input input');
-    const rangeInputs = form.querySelectorAll('.range-input input');
-    const rangeProgress = form.querySelector('.slider .progress');
-    
-    form.addEventListener('submit', function(e) {
-    
-      const minDefault = 0;
-      const maxDefault = parseInt(rangeMax.getAttribute('max')) || 0;
-    
-      if (inputMin?.value) rangeMin.value = inputMin.value;
-      if (inputMax?.value) rangeMax.value = inputMax.value;
+(function() {
+  'use strict';
 
-      if(parseInt(rangeMin.value) === minDefault) {
-        rangeMin.removeAttribute('name');
-      }
-      
-      if(parseInt(rangeMax.value) === maxDefault) {
-        rangeMax.removeAttribute('name');
-      }
-     
-    });
-    
-    // Ta bort noJS name-attribut
-    document.querySelectorAll('.price-filter--nojs input[name]').forEach(input => {
-      input.removeAttribute('name');
-    });
-    
-    
-    document.documentElement.classList.add('js');
-    if (rangeMin) rangeMin.setAttribute('name', 'price-min');
-    if (rangeMax) rangeMax.setAttribute('name', 'price-max');
-    
-    // Price range initialization och event listeners
-    if (rangeInputs.length === 2 && priceInputs.length === 2 && rangeProgress) {
-    
-     // Ändra PRICE_GAP värde om du vill minska avståndet mellan minimum- och maximum-pris 
-      const PRICE_GAP = 500;
-      
-      const updateRangeFromInputs = () => {
-        const minVal = parseInt(priceInputs[0].value) || parseInt(rangeInputs[0].min);
-        const maxVal = parseInt(priceInputs[1].value) || parseInt(rangeInputs[1].max);
+  const form = document.getElementById('product-filters');
+  if (!form) return;
+
+  const rangeMin = form.querySelector('.range-min');
+  const rangeMax = form.querySelector('.range-max');
+  const inputMin = form.querySelector('.input-min');
+  const inputMax = form.querySelector('.input-max');
+  const priceInputs = form.querySelectorAll('.price-range-input input');
+  const rangeInputs = form.querySelectorAll('.range-input input');
+  const rangeProgress = form.querySelector('.slider .progress');
+
+
+  
+  const getCheckedValues = (name) => 
+    [...form.querySelectorAll(`input[name=${name}]:checked`)]
+        .map(i => i.value);
+  
+  
+    function buildParams() {
+        const params = new URLSearchParams();
         
-        rangeInputs[0].value = minVal;
-        rangeInputs[1].value = maxVal;
+        const tags = getCheckedValues("tags");
+        const vendors = getCheckedValues("vendor");
         
-        updateProgress(minVal, maxVal);
-      };
-      
-      const updateProgress = (minVal, maxVal) => {
-        rangeProgress.style.left = (minVal / rangeInputs[0].max) * 100 + '%';
-        rangeProgress.style.right = 100 - (maxVal / rangeInputs[1].max) * 100 + '%';
-      };
-      
-      updateRangeFromInputs();
-      
-      priceInputs.forEach((input, index) => {
-        input.addEventListener('input', () => {
-          const minPrice = parseInt(priceInputs[0].value) || 0;
-          const maxPrice = parseInt(priceInputs[1].value) || 0;
-          
-          if (maxPrice - minPrice >= PRICE_GAP && maxPrice <= parseInt(rangeInputs[1].max)) {
-            if (input.classList.contains('input-min')) {
-              rangeInputs[0].value = minPrice;
-              updateProgress(minPrice, maxPrice);
-            } else {
-              rangeInputs[1].value = maxPrice;
-              updateProgress(minPrice, maxPrice);
-            }
-          }
-        });
-      });
-      
-      // Range inputs event listener
-      const handleRangeInput = (e) => {
-        const minVal = parseInt(rangeInputs[0].value);
-        const maxVal = parseInt(rangeInputs[1].value);
+        if (tags.length) params.set("tags", tags.join(","));
+        if (vendors.length) params.set("vendor", vendors.join(","));
         
-        if (maxVal - minVal < PRICE_GAP) {
-          if (e.target.classList.contains('range-min')) {
-            rangeInputs[0].value = maxVal - PRICE_GAP;
-          } else {
-            rangeInputs[1].value = minVal + PRICE_GAP;
-          }
-          return;
-        }
+        const minValue = inputMin?.value || rangeMin?.value;
+        const maxValue = inputMax?.value || rangeMax?.value;
         
-        priceInputs[0].value = minVal;
-        priceInputs[1].value = maxVal;
-        updateProgress(minVal, maxVal);
-      };
-      
-      rangeInputs.forEach(input => {
-        input.addEventListener('input', handleRangeInput);
-      });
+        if (minValue) params.set("price-min", minValue);
+        if (maxValue) params.set("price-max", maxValue);
+        
+        return params;
     }
-  })();
+  
+  {%if settings.filter_orientation == "horizontal" %}
+  
+  const cache = new Map();
+  let currentController;
+  let debounceTimer;
+  let lastQueryString = "";
+  
+  const DEBOUNCE_DELAY = 150;
+  
+  const updateGrid = (html) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    const newGrid = doc.querySelector("#product-grid");
+    const currentGrid = document.querySelector("#product-grid");
+
+    if (newGrid && currentGrid) {
+      currentGrid.innerHTML = newGrid.innerHTML;
+    }
+  };
+  
+  form.addEventListener("change", (e) => {
+    if (!e.target.matches("input[type='checkbox'], input[type='range'], input[type='number']")) {
+      return;
+    }
+
+    clearTimeout(debounceTimer);
+
+    debounceTimer = setTimeout(async () => {
+
+      const params = buildParams();
+      const baseUrl = window.location.pathname;
+      const queryString = params.toString();
+
+      if (queryString === lastQueryString) return;
+      lastQueryString = queryString;
+
+      const pageUrl = queryString
+        ? `${baseUrl}?${queryString}`
+        : baseUrl;
+
+      const fetchParams = new URLSearchParams(queryString);
+      fetchParams.set("section_id", "product-grid");
+      const fetchUrl = `${baseUrl}?${fetchParams.toString()}`;
+
+      // Kolla minnescache först
+      if (cache.has(queryString)) {
+        updateGrid(cache.get(queryString));
+        history.pushState(null, "", pageUrl);
+        return;
+      }
+
+      // Avbryt eventuell pågående request
+      if (currentController) {
+        currentController.abort();
+      }
+
+      currentController = new AbortController();
+
+      try {
+        const response = await fetch(fetchUrl, {
+          signal: currentController.signal
+        });
+
+        const html = await response.text();
+
+        // Spara i cache
+        cache.set(queryString, html);
+
+        updateGrid(html);
+        history.pushState(null, "", pageUrl);
+
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Filter fetch failed:", error);
+        }
+      }
+
+    }, DEBOUNCE_DELAY);
+  });
+
+  {% endif %}
+
+  // Ta bort noJS name-attribut
+  document.querySelectorAll('.price-filter--nojs input[name]').forEach(input => {
+    input.removeAttribute('name');
+  });
+
+  document.documentElement.classList.add('js');
+
+  if (rangeMin) rangeMin.setAttribute('name', 'price-min');
+  if (rangeMax) rangeMax.setAttribute('name', 'price-max');
+
+  if (rangeInputs.length === 2 && priceInputs.length === 2 && rangeProgress) {
+
+    const PRICE_GAP = 500;
+
+    const updateProgress = (minVal, maxVal) => {
+      rangeProgress.style.left = (minVal / rangeInputs[0].max) * 100 + '%';
+      rangeProgress.style.right = 100 - (maxVal / rangeInputs[1].max) * 100 + '%';
+    };
+
+    const updateRangeFromInputs = () => {
+      const minVal = parseInt(priceInputs[0].value) || parseInt(rangeInputs[0].min);
+      const maxVal = parseInt(priceInputs[1].value) || parseInt(rangeInputs[1].max);
+
+      rangeInputs[0].value = minVal;
+      rangeInputs[1].value = maxVal;
+
+      updateProgress(minVal, maxVal);
+    };
+
+    updateRangeFromInputs();
+
+    priceInputs.forEach((input) => {
+      input.addEventListener('input', () => {
+        const minPrice = parseInt(priceInputs[0].value) || 0;
+        const maxPrice = parseInt(priceInputs[1].value) || 0;
+
+        if (maxPrice - minPrice >= PRICE_GAP && maxPrice <= parseInt(rangeInputs[1].max)) {
+          if (input.classList.contains('input-min')) {
+            rangeInputs[0].value = minPrice;
+          } else {
+            rangeInputs[1].value = maxPrice;
+          }
+          updateProgress(minPrice, maxPrice);
+        }
+      });
+    });
+
+    const handleRangeInput = (e) => {
+      const minVal = parseInt(rangeInputs[0].value);
+      const maxVal = parseInt(rangeInputs[1].value);
+
+      if (maxVal - minVal < PRICE_GAP) {
+        if (e.target.classList.contains('range-min')) {
+          rangeInputs[0].value = maxVal - PRICE_GAP;
+        } else {
+          rangeInputs[1].value = minVal + PRICE_GAP;
+        }
+        return;
+      }
+
+      priceInputs[0].value = minVal;
+      priceInputs[1].value = maxVal;
+
+      updateProgress(minVal, maxVal);
+    };
+
+    rangeInputs.forEach(input => {
+      input.addEventListener('input', handleRangeInput);
+    });
+  }
+
+})();
 </script>
