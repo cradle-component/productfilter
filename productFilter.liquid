@@ -1,51 +1,45 @@
-{% assign max_price = 0 %}
-{% for product in collections[collection].products %}
-    {% if product.priceMax > max_price %}
-        {% assign max_price = product.priceMax %}
-    {% endif %}
-{% endfor %}
+{% assign maxPrice = collection.productPriceMax %}
 
+{% assign selectedTagsString = "," %}
+{% assign selectedVendorsString = "," %}
+{% assign selectedPriceMinimum = "" %}
+{% assign selectedPriceMaximum = "" %}
 
-{% assign selected_tags_string = "," %}
-{% assign selected_vendors_string = "," %}
-{% assign selected_price_minimum = "" %}
-{% assign selected_price_maximum = "" %}
-
-{% assign query_parameters = request.query | split: "&" %}
-{% for parameter in query_parameters %}
+{% assign queryParameters = request.query | split: "&" %}
+{% for parameter in queryParameters %}
   {% if parameter == "" %}{% continue %}{% endif %}
-  {% assign key_value_pair = parameter | split: "=" %}
-  {% assign parameter_key = key_value_pair[0] | downcase %}
-  {% assign parameter_value = key_value_pair[1] | default: "" %}
-  {% assign parameter_value = parameter_value | replace: "%2B", "+" | url_decode | strip %}
+  {% assign keyValuePair = parameter | split: "=" %}
+  {% assign parameterKey = keyValuePair[0] | downcase %}
+  {% assign parameterValue = keyValuePair[1] | default: "" %}
+  {% assign parameterValue = parameterValue | replace: "%2B", "+" | url_decode | strip %}
 
-  {% case parameter_key %}
+  {% case parameterKey %}
     {% when "tags" %}
-      {% assign tag_parts = parameter_value | split: "," %}
-      {% for tag_part in tag_parts %}
-        {% assign cleaned_tag = tag_part | strip %}
-        {% unless cleaned_tag == "" %}
-          {% assign wrapped_tag = "," | append: cleaned_tag | append: "," %}
-          {% unless selected_tags_string contains wrapped_tag %}
-            {% assign selected_tags_string = selected_tags_string | append: cleaned_tag | append: "," %}
+      {% assign tagParts = parameterValue | split: "," %}
+      {% for tagPart in tagParts %}
+        {% assign cleanedTag = tagPart | strip %}
+        {% unless cleanedTag == "" %}
+          {% assign wrappedTag = "," | append: cleanedTag | append: "," %}
+          {% unless selectedTagsString contains wrappedTag %}
+            {% assign selectedTagsString = selectedTagsString | append: cleanedTag | append: "," %}
           {% endunless %}
         {% endunless %}
       {% endfor %}
     {% when "vendor" %}
-      {% assign vendor_parts = parameter_value | split: "," %}
-      {% for vendor_part in vendor_parts %}
-        {% assign cleaned_vendor = vendor_part | strip %}
-        {% unless cleaned_vendor == "" %}
-          {% assign wrapped_vendor = "," | append: cleaned_vendor | append: "," %}
-          {% unless selected_vendors_string contains wrapped_vendor %}
-            {% assign selected_vendors_string = selected_vendors_string | append: cleaned_vendor | append: "," %}
+      {% assign vendorParts = parameterValue | split: "," %}
+      {% for vendorPart in vendorParts %}
+        {% assign cleanedVendor = vendorPart | strip %}
+        {% unless cleanedVendor == "" %}
+          {% assign wrapped_vendor = "," | append: cleanedVendor | append: "," %}
+          {% unless selectedVendorsString contains wrapped_vendor %}
+            {% assign selectedVendorsString = selectedVendorsString | append: cleanedVendor | append: "," %}
           {% endunless %}
         {% endunless %}
       {% endfor %}
     {% when "price-min" %}
-      {% assign selected_price_minimum = parameter_value %}
+      {% assign selectedPriceMinimum = parameterValue %}
     {% when "price-max" %}
-      {% assign selected_price_maximum = parameter_value %}
+      {% assign selectedPriceMaximum = parameterValue %}
   {% endcase %}
 {% endfor %}
 
@@ -72,20 +66,20 @@
                 </g>
                 </svg>
                Filter</legend>
-            {% assign used_tags_tracker = "," %}
+            {% assign usedTagsTracker = "," %}
     
-            {% for tag in collections[collection].productTags %}
-              {% assign normalized_tag = tag | downcase | strip %}
-              {% assign wrapped_tag = "," | append: normalized_tag | append: "," %}
+            {% for tag in collections[0].productTags %}
+              {% assign normalizedTag = tag | downcase | strip %}
+              {% assign wrappedTag = "," | append: normalizedTag | append: "," %}
     
-              {% unless used_tags_tracker contains wrapped_tag %}
-                {% assign search_pattern = "," | append: normalized_tag | append: "," %}
+              {% unless usedTagsTracker contains wrappedTag %}
+                {% assign searchPattern = "," | append: normalizedTag | append: "," %}
                 <label class="capitalize p-2"> 
-                  <input type="checkbox" name="tags" value="{{ normalized_tag }}" {% if selected_tags_string contains search_pattern %}checked{% endif %}>
-                  {{ normalized_tag | t:"collection" }}
+                  <input type="checkbox" name="tags" value="{{ normalizedTag }}" {% if selectedTagsString contains searchPattern %}checked{% endif %}>
+                  {{ normalizedTag | t:"collection" }}
                 </label>
     
-                {% assign used_tags_tracker = used_tags_tracker | append: normalized_tag | append: "," %}
+                {% assign usedTagsTracker = usedTagsTracker | append: normalizedTag | append: "," %}
               {% endunless %}
             {% endfor %}
         </fieldset>
@@ -97,10 +91,10 @@
            <legend>Vendors</legend>
     
             {% for vendor in vendors %}
-                {% assign vendor_value = vendor.name | strip %}
-                {% assign vendor_search_pattern = "," | append: vendor_value | append: "," %}
-                <label class="capitalize p-2">
-                  <input type="checkbox" name="vendor" value="{{ vendor_value | split: " " | join: "+" }}" {% if selected_vendors_string contains vendor_search_pattern %}checked{% endif %}>
+                {% assign vendorValue = vendor.name | strip %}
+                {% assign vendorSearchPattern = "," | append: vendorValue | append: "," %}
+                <label class="capitalize p-2" {% if settings.filter_orientation == "horizontal" %} onclick="" {% endif %}>
+                  <input type="checkbox" name="vendor" value="{{ vendorValue | split: " " | join: "+" }}" {% if selectedVendorsString contains vendorSearchPattern %}checked{% endif %}>
                   {{ vendor.name | t:"collection" }}
                 </label>
             {% endfor %}
@@ -108,15 +102,15 @@
     </div>
     {% endif %}
     <div id="price-input" class="flex flex-col justify-between">
-        {%if settings.show_price_range_filter %}
+        {%if settings.show_price_range_filter %} 
         <h2>Pris</h2>
         <div class="price-filter mb-2 price-filter--nojs">
             <label>
-                    <input class="nojs-input" placeholder="MIN" type="number" name="price-min" min="0" value="{{ selected_price_minimum }}">
+                    <input class="nojs-input" placeholder="MIN" type="number" name="price-min" min="0" value="{{ selectedPriceMinimum }}">
             </label>
             <span>-</span>
             <label>
-                    <input class="nojs-input" placeholder="MAX" type="number" name="price-max" min="0" value="{{ selected_price_maximum }}">
+                    <input class="nojs-input" placeholder="MAX" type="number" name="price-max" min="0" value="{{ selectedPriceMaximum }}">
             </label>
         </div>
         
@@ -125,25 +119,27 @@
             
               <div class="price-range-input">
                 <div class="field">
-                  <input id="price-range-minimum" type="number" class="input-min" placeholder="MIN" value="{{ selected_price_minimum }}">
+                  <input id="price-range-minimum" type="number" class="input-min" placeholder="MIN" value="{{ selectedPriceMinimum }}">
                 </div>
                 <span>-</span>
                 <div class="field">
-                  <input id="price-range-maximum" type="number" class="input-max" placeholder="MAX" value="{{ selected_price_maximum }}">
+                  <input id="price-range-maximum" type="number" class="input-max" placeholder="MAX" value="{{ selectedPriceMaximum }}">
                 </div>
               </div>  
               <div class="slider">
                 <div class="progress"></div> 
               </div>
               <div class="range-input">
-                <input type="range" class="range-min" min="0" max="{{ max_price | divided_by: 1000 }}" step="1">
-                <input type="range" class="range-max" min="0" max="{{ max_price | divided_by: 1000 }}" step="1">
+                <input type="range" class="range-min" min="0" max="{{ maxPrice | divided_by: 1000 }}" step="1">
+                <input type="range" class="range-max" min="0" max="{{ maxPrice | divided_by: 1000 }}" step="1">
               </div>
         </div>
         {% endif %}
         
         <div id="filter-buttons" class="flex justify-between pb-4">
+            {% if settings.filter_orientation == "vertical" %}
             <button type="submit" class="btn">Filtrera</button>
+            {% endif %}
             <a href="{{ request.path }}" class="btn">{{ 'Rensa filter' | t:'collection' }}</a>
         </div>
     </div>
