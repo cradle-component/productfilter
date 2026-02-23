@@ -1,0 +1,42 @@
+{
+  "key": "filter",
+  "type": "section",
+  "caption": "Filter",
+  "settings": [
+    {
+      "caption": "Show filter",
+      "default": true,
+      "key": "show_filter",
+      "type": "checkbox"
+    },
+    {
+      "caption": "Filter orientation",
+      "default": "horizontal",
+      "key": "filter_orientation",
+      "options": [
+        {
+          "caption": "Horizontal",
+          "value": "horizontal"
+        },
+        {
+          "caption": "Vertical",
+          "value": "vertical"
+        }
+      ],
+      "type": "select"
+    },
+    {
+      "caption": "Show Vendor filter",
+      "default": true,
+      "key": "show_vendor_filter",
+      "type": "checkbox"
+    },
+    {
+      "caption": "Show price range filter",
+      "default": true,
+      "key": "show_price_range_filter",
+      "type": "checkbox"
+    }
+  ],
+  "default": null
+}
