@@ -68,7 +68,7 @@
                Filter</legend>
             {% assign usedTagsTracker = "," %}
     
-            {% for tag in collections[0].productTags %}
+            {% for tag in collections[collection].productTags %}
               {% assign normalizedTag = tag | downcase | strip %}
               {% assign wrappedTag = "," | append: normalizedTag | append: "," %}
     
@@ -562,8 +562,5 @@
       input.addEventListener('input', handleRangeInput);
     });
   }
-  
-  
-
 })();
 </script>
