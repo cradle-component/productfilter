@@ -50,7 +50,7 @@
 {% endif %}    
     
     <div id="tags-wrapper">
-        <fieldset class="flex {% if settings.filter_orientation == "vertical"%}flex-col{% endif %} mb-2">
+        <fieldset class="flex {% if settings.filter_orientation == "vertical"%}flex-col{% else %} flex-wrap {% endif %} mb-2">
            <legend class="flex gap-2 items-center">
                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24" height="24" viewBox="0 0 256 256" xml:space="preserve">
                 <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
@@ -65,7 +65,8 @@
                 	<path d="M 72.344 28.013 H 54.114 c -1.657 0 -3 -1.343 -3 -3 V 6.783 c 0 -1.657 1.343 -3 3 -3 h 18.229 c 1.657 0 3 1.343 3 3 v 18.229 C 75.344 26.669 74.001 28.013 72.344 28.013 z M 57.114 22.013 h 12.229 V 9.783 H 57.114 V 22.013 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
                 </g>
                 </svg>
-               Filter</legend>
+               Filter
+            </legend>
             {% assign usedTagsTracker = "," %}
     
             {% for tag in collections[collection].productTags %}
@@ -87,7 +88,7 @@
     
     {%if settings.show_vendor_filter %}
     <div id="vendor-wrapper">
-        <fieldset class="flex flex-col mb-2">
+        <fieldset class="flex flex-col lg:flex-row mb-2">
            <legend>Vendors</legend>
     
             {% for vendor in vendors %}
@@ -140,9 +141,8 @@
             <button id="submit-filter" type="submit" class="btn">Filtrera</button>
             <a href="{{ request.path }}" class="btn">{{ 'Rensa filter' | t:'collection' }}</a>
         </div>
-    </div>
+    </div> 
 </form>
-
 <style>
     <!-- price range slider styling -->
     .price-range-wrapper {
@@ -274,6 +274,7 @@
     #filter label:has(input[type="checkbox"]):hover {
         cursor: pointer;
         background-color: #f3f3f3;
+        transition: 0.25s;
     }
     
     #tags-wrapper, #vendor-wrapper {
@@ -294,6 +295,22 @@
         #filter-buttons {
             margin-top: 1rem;
             padding: 0;
+        }
+      
+        
+        #product-filters label:has(input[type="checkbox"]) {
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: .5rem;
+            corner-shape: squircle bevel ;
+            
+            input {
+                display: none;
+            }
+        }
+        #product-filters label:has(input[type="checkbox"]:checked) {
+
+            outline: 2px solid #00000050;
         }
         
         .price-range-input {
@@ -408,89 +425,135 @@
     }
   
   {%if settings.filter_orientation == "horizontal" %}
-  
-  const cache = new Map();
-  let currentController;
-  let debounceTimer;
-  let lastQueryString = "";
-  
-  const DEBOUNCE_DELAY = 150;
-  
-  const updateGrid = (html) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
 
-    const newGrid = doc.querySelector("#product-grid");
-    const currentGrid = document.querySelector("#product-grid");
-
-    if (newGrid && currentGrid) {
-      currentGrid.innerHTML = newGrid.innerHTML;
+    const cache = new Map();
+    let currentController;
+    let debounceTimer;
+    let lastQueryString = "";
+    
+    const DEBOUNCE_DELAY = 250;
+    
+    const updateGrid = (html) => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+    
+      const newGrid = doc.querySelector("#product-grid");
+      const currentGrid = document.querySelector("#product-grid");
+    
+      if (newGrid && currentGrid) {
+        currentGrid.innerHTML = newGrid.innerHTML;
+      }
+    };
+    
+    function syncUIFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+    
+      // Tags
+      const selectedTags = (params.get("tags") || "")
+        .split(",")
+        .filter(Boolean);
+    
+      form.querySelectorAll("input[name='tags']").forEach(input => {
+        input.checked = selectedTags.includes(input.value);
+      });
+    
+      // Vendors
+      const selectedVendors = (params.get("vendor") || "")
+        .split(",")
+        .filter(Boolean);
+    
+      form.querySelectorAll("input[name='vendor']").forEach(input => {
+        input.checked = selectedVendors.includes(input.value);
+      });
+    
+      // Price
+      const min = params.get("price-min") || "";
+      const max = params.get("price-max") || "";
+    
+      if (inputMin) inputMin.value = min;
+      if (inputMax) inputMax.value = max;
+      if (rangeMin) rangeMin.value = min || rangeMin.min;
+      if (rangeMax) rangeMax.value = max || rangeMax.max;
+    
+      // Uppdatera slider visuellt
+      if (rangeProgress && rangeMin && rangeMax) {
+        const minVal = parseInt(rangeMin.value) || 0;
+        const maxVal = parseInt(rangeMax.value) || 0;
+    
+        rangeProgress.style.left = (minVal / rangeMin.max) * 100 + "%";
+        rangeProgress.style.right =
+          100 - (maxVal / rangeMax.max) * 100 + "%";
+      }
     }
-  };
-  
-  form.addEventListener("change", (e) => {
-    if (!e.target.matches("input[type='checkbox'], input[type='range'], input[type='number']")) {
-      return;
-    }
-
-    clearTimeout(debounceTimer);
-
-    debounceTimer = setTimeout(async () => {
-
-      const params = buildParams();
+    
+    async function updateFromUrl(queryString, push = false) {
       const baseUrl = window.location.pathname;
-      const queryString = params.toString();
-
+    
       if (queryString === lastQueryString) return;
       lastQueryString = queryString;
-
+    
       const pageUrl = queryString
         ? `${baseUrl}?${queryString}`
         : baseUrl;
-
+    
       const fetchParams = new URLSearchParams(queryString);
       fetchParams.set("section_id", "product-grid");
       const fetchUrl = `${baseUrl}?${fetchParams.toString()}`;
-
-      // Kolla minnescache först
+    
       if (cache.has(queryString)) {
         updateGrid(cache.get(queryString));
-        history.pushState(null, "", pageUrl);
+        if (push) history.pushState(null, "", pageUrl);
         return;
       }
-
-      // Avbryt eventuell pågående request
-      if (currentController) {
-        currentController.abort();
-      }
-
+    
+      if (currentController) currentController.abort();
       currentController = new AbortController();
-
+    
       try {
         const response = await fetch(fetchUrl, {
           signal: currentController.signal
         });
-
+    
         const html = await response.text();
-
-        // Spara i cache
+    
         cache.set(queryString, html);
-
         updateGrid(html);
-        history.pushState(null, "", pageUrl);
-
+    
+        if (push) history.pushState(null, "", pageUrl);
+    
       } catch (error) {
         if (error.name !== "AbortError") {
           console.error("Filter fetch failed:", error);
         }
       }
+    }
+    
+    form.addEventListener("change", (e) => {
+      if (!e.target.matches("input[type='checkbox'], input[type='range'], input[type='number']")) {
+        return;
+      }
+    
+      clearTimeout(debounceTimer);
+    
+      debounceTimer = setTimeout(() => {
+        const params = buildParams();
+        const queryString = params.toString();
+    
+        updateFromUrl(queryString, true);
+      }, DEBOUNCE_DELAY);
+    });
+    
+    window.addEventListener("popstate", () => {
+      syncUIFromUrl();
+      const queryString = window.location.search.slice(1);
+      updateFromUrl(queryString, false);
+    });
+    
+    syncUIFromUrl();
+    
+    document.querySelector("#submit-filter").classList.add("hidden");
 
-    }, DEBOUNCE_DELAY);
-  });
-  
-  document.querySelector("#submit-filter").classList.add("hidden");
-
-  {% endif %}
+{% endif %}
 
   // Ta bort noJS name-attribut
   document.querySelectorAll('.price-filter--nojs input[name]').forEach(input => {
