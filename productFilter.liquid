@@ -11,7 +11,7 @@
   {% assign keyValuePair = parameter | split: "=" %}
   {% assign parameterKey = keyValuePair[0] | downcase %}
   {% assign parameterValue = keyValuePair[1] | default: "" %}
-  {% assign parameterValue = parameterValue | replace: "%2B", "+" | url_decode | strip %}
+  {% assign parameterValue = parameterValue | replace: "%2C", "," | url_decode | strip %}
 
   {% case parameterKey %}
     {% when "tags" %}
@@ -43,12 +43,9 @@
   {% endcase %}
 {% endfor %}
 
-{% if settings.filter_orientation == "vertical" %} 
     <form action="{{ collection.url }}" method="get" id="product-filters" class="filters flex flex-wrap" >
-{% elsif settings.filter_orientation == "horizontal" %}
-    <form action="{{ collection.url }}" method="get" id="product-filters" class="filters flex flex-col flex-wrap" >
-{% endif %}    
     
+    {%if settings.show_tags_filter %}
     <div id="tags-wrapper">
         <fieldset class="flex {% if settings.filter_orientation == "vertical"%}flex-col{% else %} flex-wrap {% endif %} mb-2">
            <legend class="flex gap-2 items-center">
@@ -85,6 +82,7 @@
             {% endfor %}
         </fieldset>
     </div>
+    {% endif %}
     
     {%if settings.show_vendor_filter %}
     <div id="vendor-wrapper">
@@ -324,7 +322,7 @@
         #tags-wrapper, #vendor-wrapper {
             margin-right: 1rem;
             min-width: 13rem;
-            max-width: fit-content;
+            max-width: 24rem;
         }
         
         #price-input {
@@ -537,8 +535,8 @@
     
       debounceTimer = setTimeout(() => {
         const params = buildParams();
-        const queryString = params.toString();
-    
+        const queryString = params.toString().replaceAll("%2C", ",");
+        
         updateFromUrl(queryString, true);
       }, DEBOUNCE_DELAY);
     });
