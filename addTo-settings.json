@@ -26,6 +26,12 @@
       "type": "select"
     },
     {
+      "caption": "Show Tags filter",
+      "default": true,
+      "key": "show_tags_filter",
+      "type": "checkbox"
+    },
+    {
       "caption": "Show Vendor filter",
       "default": true,
       "key": "show_vendor_filter",
