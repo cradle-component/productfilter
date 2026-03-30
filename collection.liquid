@@ -4,6 +4,8 @@
         <div class="{{ collection.format }}">{{ collection.html }}</div>       
     </div>
     
+    <button class="toggle-filter-button btn lg:hidden" onclick="toggleFilter()">Toggle Filter</button>
+    
     {% if settings.filter_orientation == "horizontal" %}
         <div id="product-filter-wrapper" class="flex flex-col gap-4">
             
@@ -12,14 +14,21 @@
             
     {% endif %}
     
-            <div id="filter" class="mt-8">
+            <div id="filter" class="mt-8 hidden lg:block">
         	    {% include 'productFilter' %}
         	</div>
         	    
-        	<div class="mt-10 grid {{ settings.colProductCount | def:"grid-cols-2 md:grid-cols-2 lg:grid-cols-4" }} gap-4">
+        	<div id="product-grid" class="mt-10 grid {{ settings.colProductCount | def:"grid-cols-2 md:grid-cols-2 lg:grid-cols-4" }} gap-4">
         	{% for product in collection.products %}
         	    {% include 'productCard' %}
         	{% endfor %}
     	    </div>
         </div>
 </section>
+<script>
+    function toggleFilter() {
+        const filter = document.querySelector("#filter");
+      
+        filter.classList.toggle("hidden");
+    }
+</script>
