@@ -43,12 +43,7 @@
   {% endcase %}
 {% endfor %}
 
-    <form action="{{ collection.url }}" method="get" id="product-filters" class="filters flex flex-wrap" >
-    
-    {%if settings.show_tags_filter %}
-    <div id="tags-wrapper">
-        <fieldset class="flex {% if settings.filter_orientation == "vertical"%}flex-col{% else %} flex-wrap {% endif %} mb-2">
-           <legend class="flex gap-2 items-center">
+           <div class="filter-header flex gap-2 items-center">
                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24" height="24" viewBox="0 0 256 256" xml:space="preserve">
                 <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
                 	<path d="M 87 77.103 H 54.88 c -1.657 0 -3 -1.343 -3 -3 s 1.343 -3 3 -3 H 87 c 1.657 0 3 1.343 3 3 S 88.657 77.103 87 77.103 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
@@ -63,84 +58,193 @@
                 </g>
                 </svg>
                Filter
-            </legend>
+            </div>
+    <form action="{{ collection.url }}" method="get" id="product-filters" class="filters flex {% if settings.filter_orientation == "vertical"%}flex-col {% endif %} flex-wrap" >
+    
+    {%if settings.show_tags_filter %}
+    <div id="tags-wrapper">
+        <fieldset class="flex {% if settings.filter_orientation == "vertical"%}flex-col{% else %} flex-wrap {% endif %} mb-2">
             {% assign usedTagsTracker = "," %}
-    
-            {% for tag in collections[collection].productTags %}
-              {% assign normalizedTag = tag | downcase | strip %}
-              {% assign wrappedTag = "," | append: normalizedTag | append: "," %}
-    
-              {% unless usedTagsTracker contains wrappedTag %}
-                {% assign searchPattern = "," | append: normalizedTag | append: "," %}
-                <label class="capitalize p-2"> 
-                  <input type="checkbox" name="tags" value="{{ normalizedTag }}" {% if selectedTagsString contains searchPattern %}checked{% endif %}>
-                  {{ normalizedTag | t:"collection" }}
-                </label>
-    
-                {% assign usedTagsTracker = usedTagsTracker | append: normalizedTag | append: "," %}
-              {% endunless %}
-            {% endfor %}
+            {% if settings.filter_orientation == "horizontal"%}
+            <details class="dropdown" name="filter-dropdown">
+              <summary class="btn m-1">
+                Tags
+                <span class="icon-caret"></span>
+              </summary>
+              <ul class="menu flex flex-row dropdown-content bg-base-100 rounded-box z-1 w-96 p-2 shadow-md">
+            {% endif %}
+                {% for tag in collections[collection].productTags %}
+                {% unless tag contains "_"%}
+                  {% assign normalizedTag = tag | downcase | strip %}
+                  {% assign wrappedTag = "," | append: normalizedTag | append: "," %}
+        
+                  {% unless usedTagsTracker contains wrappedTag %}
+                    {% assign searchPattern = "," | append: normalizedTag | append: "," %}
+                    <label class="capitalize p-2"> 
+                      <input type="checkbox" name="tags" value="{{ normalizedTag }}" {% if selectedTagsString contains searchPattern %}checked{% endif %}>
+                      {{ normalizedTag | t:"collection" }}
+                    </label>
+        
+                    {% assign usedTagsTracker = usedTagsTracker | append: normalizedTag | append: "," %}
+                  {% endunless %}
+                  {% endunless %}
+                {% endfor %}
+              </ul>
+            </details>
         </fieldset>
     </div>
     {% endif %}
     
     {%if settings.show_vendor_filter %}
     <div id="vendor-wrapper">
-        <fieldset class="flex flex-col lg:flex-row mb-2">
-           <legend>Vendors</legend>
-    
-            {% for vendor in vendors %}
-                {% assign vendorValue = vendor.name | strip %}
-                {% assign vendorSearchPattern = "," | append: vendorValue | append: "," %}
-                <label class="capitalize p-2" {% if settings.filter_orientation == "horizontal" %} onclick="" {% endif %}>
-                  <input type="checkbox" name="vendor" value="{{ vendorValue | split: " " | join: "+" }}" {% if selectedVendorsString contains vendorSearchPattern %}checked{% endif %}>
-                  {{ vendor.name | t:"collection" }}
-                </label>
-            {% endfor %}
+        {% if settings.filter_orientation == "vertical"%}<div class="filter-header">Vendors</div> {% endif %}
+        
+        <fieldset class="flex flex-col {% if settings.filter_orientation == "horizontal"%} lg:flex-row {% endif%}  mb-2">
+           
+           {% if settings.filter_orientation == "horizontal"%}
+           <details class="dropdown" name="filter-dropdown">
+              <summary class="btn m-1">
+                  Vendors
+                  <span class="icon-caret"></span>
+              </summary>
+              <ul class="menu flex flex-row dropdown-content bg-base-100 rounded-box z-1 w-96 p-2 shadow-md">
+            {% endif %}
+                {% for vendor in collection.productVendors %}
+                    {% assign vendorValue = vendor | strip %}
+                    {% assign vendorSearchPattern = "," | append: vendorValue | append: "," %}
+                    <label class="capitalize p-2" {% if settings.filter_orientation == "horizontal" %} {% endif %}>
+                      <input type="checkbox" name="vendor" value="{{ vendorValue | split: " " | join: "+" }}" {% if selectedVendorsString contains vendorSearchPattern %}checked{% endif %}>
+                      {{ vendor | t:"collection" }}
+                    </label>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            </details>
         </fieldset>
     </div>
+    
+    
+    {% if settings.show_group_tags_filter %}
+    {% assign groups = '' %}
+
+    {% for tag in collection.productTags %}
+      {% if tag contains "_" %}
+        {% assign tagParts = tag | split: "_" %}
+        {% assign groupName = tagParts.first | downcase %}
+        {% assign groups = groups | append: groupName | append: "," %}
+      {% endif %}
+    {% endfor %}
+    
+    {% assign groups = groups | split: "," | compact | uniq %}
+    
+    {% for group in groups %}
+    
+    <div class="filter-wrapper">
+    
+    {% if settings.filter_orientation == "vertical" %}    
+        <div class="filter-header">{{ group | capitalize }}</div>
     {% endif %}
-    <div id="price-input" class="flex flex-col justify-between">
-        {%if settings.show_price_range_filter %} 
-        <h2>Pris</h2>
-        <div class="price-filter mb-2 price-filter--nojs">
-            <label>
-                    <input class="nojs-input" placeholder="MIN" type="number" name="price-min" min="0" value="{{ selectedPriceMinimum }}">
-            </label>
-            <span>-</span>
-            <label>
-                    <input class="nojs-input" placeholder="MAX" type="number" name="price-max" min="0" value="{{ selectedPriceMaximum }}">
-            </label>
-        </div>
-        
-        
-        <div class="price-range-wrapper price-filter--js">
+    
+      <fieldset class="flex {% if settings.filter_orientation == "vertical"%}flex-col{% else %} flex-wrap {% endif %} mb-2">
+      {% if settings.filter_orientation == "horizontal" %}
+      <details class="dropdown" name="filter-dropdown">
+        <summary class="btn m-1">
+          {{ group | capitalize }}
+          <span class="icon-caret"></span>
+        </summary>
+        <ul class="menu flex flex-row dropdown-content bg-base-100 rounded-box z-1 w-96 p-2 shadow-md">
+      {% endif %}
+          {% for tag in collection.productTags %}
+            {% assign tagLower = tag | downcase %}
+            {% assign prefix = group | append: "_" %}
             
-              <div class="price-range-input">
-                <div class="field">
-                  <input id="price-range-minimum" type="number" class="input-min" placeholder="MIN" value="{{ selectedPriceMinimum }}">
+            {% if tagLower contains prefix %}
+
+              {% assign tagParts = tag | split: "_" %}
+              {% assign option = tagParts.last %}
+              {% assign wrappedTagValue = "," | append: tagLower | append: "," %}
+              
+            <label class="p-2">
+              <input type="checkbox" name="tags" value="{{ tagLower }}" {% if selectedTagsString contains wrappedTagValue %}checked{% endif %}>
+              {{ option | capitalize }}
+            </label>
+              
+    
+            {% endif %}
+          {% endfor %}
+        </ul>
+    
+      </details>
+      </fieldset>
+    </div>
+
+    {% endfor %}
+    
+    {% endif %}
+    
+    
+    {%if settings.show_price_range_filter %} 
+    {%if settings.filter_orientation == "horizontal" %} 
+    
+    <details class="dropdown" name="filter-dropdown">
+        <summary class="btn m-1">
+          {{ "price" | capitalize }}
+          <span class="icon-caret"></span>
+        </summary>
+    {% endif %}
+            <div id="price-input" class="flex flex-col justify-between">
+                <h2>Pris</h2>
+                <div class="price-filter mb-2 price-filter--nojs">
+                    <label>
+                            <input class="nojs-input" placeholder="MIN" type="number" name="price-min" min="0" value="{{ selectedPriceMinimum }}">
+                    </label>
+                    <span>-</span>
+                    <label>
+                            <input class="nojs-input" placeholder="MAX" type="number" name="price-max" min="0" value="{{ selectedPriceMaximum }}">
+                    </label>
                 </div>
-                <span>-</span>
-                <div class="field">
-                  <input id="price-range-maximum" type="number" class="input-max" placeholder="MAX" value="{{ selectedPriceMaximum }}">
+                
+                
+                <div class="price-range-wrapper price-filter--js">
+                    
+                      <div class="price-range-input">
+                        <div class="field">
+                          <input id="price-range-minimum" type="number" class="input-min" placeholder="MIN" value="{{ selectedPriceMinimum }}">
+                        </div>
+                        <span>-</span>
+                        <div class="field">
+                          <input id="price-range-maximum" type="number" class="input-max" placeholder="MAX" value="{{ selectedPriceMaximum }}">
+                        </div>
+                      </div>  
+                      <div class="slider">
+                        <div class="progress"></div> 
+                      </div>
+                      <div class="range-input">
+                        <input type="range" class="range-min" min="0" max="{{ maxPrice | divided_by: 1000 }}" step="1">
+                        <input type="range" class="range-max" min="0" max="{{ maxPrice | divided_by: 1000 }}" step="1">
+                      </div>
                 </div>
-              </div>  
-              <div class="slider">
-                <div class="progress"></div> 
-              </div>
-              <div class="range-input">
-                <input type="range" class="range-min" min="0" max="{{ maxPrice | divided_by: 1000 }}" step="1">
-                <input type="range" class="range-max" min="0" max="{{ maxPrice | divided_by: 1000 }}" step="1">
-              </div>
-        </div>
-        {% endif %}
+                
+            </div> 
+        </details>
+    {% endif %}
         
+        {% if settings.filter_orientation == "vertical" %}
         <div id="filter-buttons" class="flex justify-between pb-4">
             <button id="submit-filter" type="submit" class="btn">Filtrera</button>
             <a href="{{ request.path }}" class="btn">{{ 'Rensa filter' | t:'collection' }}</a>
         </div>
-    </div> 
+        {% endif %}
 </form>
+
+{% if settings.filter_orientation == "horizontal"%}
+<div id="active-filters">
+    <ul id="active-filters-list">
+        
+    </ul>
+</div>
+{% endif %}
+
 <style>
     <!-- price range slider styling -->
     .price-range-wrapper {
@@ -198,6 +302,9 @@
       position: absolute;
       border-radius: 5px;
       background: #17a2b8;
+    }
+    .progress {
+        max-width: 100%;
     }
     .range-input {
       position: relative;
@@ -275,19 +382,39 @@
         transition: 0.25s;
     }
     
-    #tags-wrapper, #vendor-wrapper {
+    .filter-header {
+        font-size: 1.25rem;
         width: 100%;
+        padding: .5rem 0 .5rem .5rem;
+        margin-bottom: .75rem;
+        background: #ffffff00;
+        box-shadow: 1px 1px 3px #00000020;
+    }
+    #tags-wrapper, #vendor-wrapper {
         height: fit-content;
-        
-        legend {
-            font-size: 1.25rem;
-            width: 100%;
-            padding: .5rem 0 .5rem .5rem;
-            margin-bottom: .75rem;
-            background: #ffffff00;
-            box-shadow: 1px 1px 3px #00000020;
+    }
+    
+    
+    @media(max-width: 1024px) {
+        #product-filter-wrapper {
+            position: relative;
+        }
+        #filter {
+            position: absolute;
+            background: var(--color-base-100);
+            z-index: 1;
         }
     }
+    
+    @media(max-width: 640px) {
+        #filter{
+            margin-left: -10px;
+            width: calc(100% + 20px);
+        }
+    }
+   
+    
+    
     
     {% if settings.filter_orientation == "horizontal" %}
         #filter-buttons {
@@ -311,9 +438,43 @@
             outline: 2px solid #00000050;
         }
         
+        .icon-caret {
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #898989;
+            transition: transform 0.3s ease;
+            margin-left: .5rem
+        }
+        
+        
+        details[open] .icon-caret {
+            transform: rotate(180deg);
+        }
+        
         .price-range-input {
             margin-block: 15px;
         }
+        
+        
+        
+        
+        .price-filter input, price-filter--nojs label input {
+          width: 30%;
+          height: 100%;
+          padding: 0.5rem;
+          outline: none;
+          font-size: 1.15rem;
+          border-radius: 5px;
+          text-align: center;
+          border: 1px solid #999;
+          -moz-appearance: textfield;
+        }
+        
+        
+        
         
         #product-filters {
             gap: 2rem;
@@ -321,13 +482,46 @@
         
         #tags-wrapper, #vendor-wrapper {
             margin-right: 1rem;
-            min-width: 13rem;
             max-width: 24rem;
         }
         
         #price-input {
             max-width: 300px;
             margin-top: 1rem;
+        }
+        
+        
+        /* Active Filters */
+        
+        #active-filters-list {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        #active-filters-list li {
+            margin: 0; padding: 0;
+        }
+        
+        #active-filters-list li span {
+            background-color: #ccc;
+            padding: 0.35rem 1rem;
+            border-radius: 50px 0 0 50px;
+        }
+        
+        #active-filters-list li button {
+            background-color: #ccc;
+            padding: 0.1rem;
+            border-radius: 0 50px 50px 0;
+            padding-inline: 0.35rem 0.5rem;
+            cursor: pointer;
+        }
+        #active-filters-list li button:hover {
+            background-color: #f1f1f1;
+        }
+        
+        #active-filters-list a {
+            font-size: 0.95rem;
         }
     
     {% elsif settings.filter_orientation == "vertical" %}
@@ -341,6 +535,12 @@
         }
         
         #tags-wrapper, #vendor-wrapper {
+            width: 100%;
+            min-width: 13rem;
+            max-width: fit-content;
+        }
+        
+        .filter-wrapper {
             min-width: 13rem;
             max-width: fit-content;
         }
@@ -402,23 +602,58 @@
   const getCheckedValues = (name) => 
     [...form.querySelectorAll(`input[name=${name}]:checked`)]
         .map(i => i.value);
+
+  const isGroupLikeValue = (value) => typeof value === "string" && value.includes("_");
+  
+  function toggleFilter() {
+      const filter = document.querySelector("#filter");
+      
+      filter.classList.toggle("hidden");
+  }
   
   
     function buildParams() {
         const params = new URLSearchParams();
-        
-        const tags = getCheckedValues("tags");
-        const vendors = getCheckedValues("vendor");
-        
-        if (tags.length) params.set("tags", tags.join(","));
-        if (vendors.length) params.set("vendor", vendors.join(","));
-        
+
+        const seen = new Set();
+        const dynamicGroupTags = new Set();
+
+        form.querySelectorAll('input[type="checkbox"]').forEach(input => {
+          if (seen.has(input.name)) return;
+          seen.add(input.name);
+          const values = getCheckedValues(input.name);
+
+          if (!values.length) return;
+
+          // Group filters can have dynamic names (a/b/c etc). 
+          // Back-end filtering expects tag values in the "tags" query parameter.
+          if (input.name !== "tags" && input.name !== "vendor") {
+            values.forEach(value => {
+              if (isGroupLikeValue(value)) dynamicGroupTags.add(value);
+            });
+            return;
+          }
+
+          params.set(input.name, values.join(","));
+        });
+
+        if (dynamicGroupTags.size) {
+          const existingTags = (params.get("tags") || "").split(",").filter(Boolean);
+          const mergedTags = [...new Set([...existingTags, ...dynamicGroupTags])];
+          params.set("tags", mergedTags.join(","));
+        }
+
         const minValue = inputMin?.value || rangeMin?.value;
         const maxValue = inputMax?.value || rangeMax?.value;
-        
-        if (minValue) params.set("price-min", minValue);
-        if (maxValue) params.set("price-max", maxValue);
-        
+
+        if (minValue > 0) {
+          params.set("price-min", minValue);
+        }
+
+        if (maxValue < rangeMax.max) {
+          params.set("price-max", maxValue);
+        }
+
         return params;
     }
   
@@ -431,39 +666,185 @@
     
     const DEBOUNCE_DELAY = 250;
     
+    
+    
+    document.addEventListener("click", (e) => {
+        const allDetails = document.querySelectorAll("details[open]");
+        
+        allDetails.forEach( details => {
+            if(!details.contains(e.target)) {
+                details.removeAttribute("open")
+            }
+        })
+    })
+    
+    document.addEventListener("click", (e) => {
+        const allDetails = document.querySelectorAll("details[open]");
+        
+        allDetails.forEach(details => {
+            if (!details.contains(e.target)) { 
+                details.removeAttribute("open");
+            }
+        });
+    });
+ 
+    
+    
+    // active filters ------------------
+    
+    function getReadableValue(value) {
+        if(value.includes("_")) {
+            return value.split("_").pop();
+        } 
+        return value;
+    }
+    
+    function getActiveFilterValues() {
+        const params = buildParams();
+        const activeFilters = [];
+        
+        for (let [key, value] of params.entries()) {
+            if (key === "price-min" || key === "price-max") {
+                continue;
+            }
+            
+            const values = value.split(",");
+            values.forEach( v => {
+                activeFilters.push({
+                    rawValue: v,
+                    displayValue: getReadableValue(v),
+                    paramKey: key,
+                    originalValue: v
+                });
+            });
+        }
+        
+        
+        const minValue = params.get("price-min");
+        const maxValue = params.get("price-max");
+        if (minValue || maxValue) {
+            activeFilters.push({
+                rawValue: `price-${minValue}-${maxValue}`,
+                displayValue: `${minValue ||0} kr - ${maxValue || "{{ selectedPriceMaximum }}"} kr`,
+                paramKey: "price",
+                isPrice: true,
+                minValue: minValue,
+                maxValue: maxValue
+            });
+        }
+        
+        return activeFilters;
+    }
+    
+    function renderActiveFilters() {
+        const container = document.querySelector("#active-filters-list");
+        if(!container) return;
+        
+        const activeFilters = getActiveFilterValues();
+        container.innerHTML = '';
+        if (activeFilters.length === 0) {
+            
+            return;
+        }
+        
+        container.innerHTML = activeFilters.map(filter => `
+            <li data-param-key="${filter.paramKey}"
+                data-original-value="${filter.originalValue || ''}"
+                data-is-price="${filter.isPrice || false}"
+                data-price-min="${filter.minValue || ''}"
+                data-price-max="${filter.maxValue || ''}"
+            >
+                <span class="filter-label capitalize">${filter.displayValue}</span>
+                <button class="remove-filter" aria-label="Ta bort filter">X</button>
+            </li>
+        `).join('');
+        
+        if(activeFilters.length !== 0) {
+            container.innerHTML += "<a href='{{ request.path }}'>Rensa filter</a>"
+        }
+    }
+    
+    function findCheckboxByValue(value) {
+        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+        for (let checkbox of checkboxes) {
+            if(checkbox.value === value) {
+                return checkbox
+            }
+        }
+        return null;
+    }
+    
+    function removeFilter() {
+        document.body.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-filter');
+            if (!removeBtn) return;
+            
+            const li = removeBtn.closest('li')
+            const isPrice = li.dataset.isPrice === 'true';
+            
+            if (isPrice) {
+                
+                if (inputMin) inputMin.value = '';
+                if (inputMax) inputMax.value = '';
+                if (rangeMin) rangeMin.value = rangeMin.min;
+                if (rangeMax) rangeMax.value = rangeMax.max;
+              } else {
+                const originalValue = li.dataset.originalValue;
+                const checkbox = findCheckboxByValue(originalValue);
+                if (checkbox) {
+                    checkbox.checked = false;
+                }
+              }
+              
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(performUpdate, DEBOUNCE_DELAY);            
+        })
+    }
+    
+    // END active filters ------------------
+    
+    
+    const findGrid = (root) =>
+      root.querySelector("#product-grid") ||
+      root.querySelector("#product-filter-wrapper > .mt-10.grid") ||
+      root.querySelector(".mt-10.grid");
+
     const updateGrid = (html) => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
-    
-      const newGrid = doc.querySelector("#product-grid");
-      const currentGrid = document.querySelector("#product-grid");
-    
+
+      const newGrid = findGrid(doc);
+      const currentGrid = findGrid(document);
+
       if (newGrid && currentGrid) {
         currentGrid.innerHTML = newGrid.innerHTML;
+        return true;
       }
+
+      return false;
     };
     
     function syncUIFromUrl() {
       const params = new URLSearchParams(window.location.search);
-    
-      // Tags
-      const selectedTags = (params.get("tags") || "")
-        .split(",")
-        .filter(Boolean);
-    
-      form.querySelectorAll("input[name='tags']").forEach(input => {
-        input.checked = selectedTags.includes(input.value);
+      const selectedTags = (params.get("tags") || "").split(",").filter(Boolean);
+
+      form.querySelectorAll("input[type='checkbox']").forEach(input => {
+        const valuesForName = (params.get(input.name) || "").split(",").filter(Boolean);
+
+        if (valuesForName.includes(input.value)) {
+          input.checked = true;
+          return;
+        }
+
+        // Also sync dynamic group checkboxes from tags param.
+        if (input.name !== "tags" && input.name !== "vendor" && selectedTags.includes(input.value)) {
+          input.checked = true;
+          return;
+        }
+
+        input.checked = false;
       });
-    
-      // Vendors
-      const selectedVendors = (params.get("vendor") || "")
-        .split(",")
-        .filter(Boolean);
-    
-      form.querySelectorAll("input[name='vendor']").forEach(input => {
-        input.checked = selectedVendors.includes(input.value);
-      });
-    
+
       // Price
       const min = params.get("price-min") || "";
       const max = params.get("price-max") || "";
@@ -499,7 +880,11 @@
       const fetchUrl = `${baseUrl}?${fetchParams.toString()}`;
     
       if (cache.has(queryString)) {
-        updateGrid(cache.get(queryString));
+        const updated = updateGrid(cache.get(queryString));
+        if (!updated) {
+          window.location.assign(pageUrl);
+          return;
+        }
         if (push) history.pushState(null, "", pageUrl);
         return;
       }
@@ -515,7 +900,12 @@
         const html = await response.text();
     
         cache.set(queryString, html);
-        updateGrid(html);
+        const updated = updateGrid(html);
+
+        if (!updated) {
+          window.location.assign(pageUrl);
+          return;
+        }
     
         if (push) history.pushState(null, "", pageUrl);
     
@@ -526,30 +916,37 @@
       }
     }
     
-    form.addEventListener("change", (e) => {
-      if (!e.target.matches("input[type='checkbox'], input[type='range'], input[type='number']")) {
-        return;
-      }
-    
-      clearTimeout(debounceTimer);
-    
-      debounceTimer = setTimeout(() => {
+    function performUpdate() {
         const params = buildParams();
         const queryString = params.toString().replaceAll("%2C", ",");
         
         updateFromUrl(queryString, true);
-      }, DEBOUNCE_DELAY);
+        renderActiveFilters();
+    }
+
+    form.addEventListener("change", (e) => {
+        if (!e.target.matches("input[type='checkbox'], input[type='range'], input[type='number']")) {
+            return;
+        }
+        
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(performUpdate, DEBOUNCE_DELAY);
     });
     
     window.addEventListener("popstate", () => {
       syncUIFromUrl();
       const queryString = window.location.search.slice(1);
       updateFromUrl(queryString, false);
+      renderActiveFilters();
     });
     
     syncUIFromUrl();
+    renderActiveFilters();
+    removeFilter();
     
-    document.querySelector("#submit-filter").classList.add("hidden");
+    document.querySelector("#submit-filter")?.classList.add("hidden");
+    
+    
 
 {% endif %}
 
@@ -565,7 +962,7 @@
 
   if (rangeInputs.length === 2 && priceInputs.length === 2 && rangeProgress) {
 
-    const PRICE_GAP = 500;
+    const PRICE_GAP = 10;
 
     const updateProgress = (minVal, maxVal) => {
       rangeProgress.style.left = (minVal / rangeInputs[0].max) * 100 + '%';
