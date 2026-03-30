@@ -38,6 +38,12 @@
       "type": "checkbox"
     },
     {
+      "caption": "Show group tags filter",
+      "default": true,
+      "key": "show_group_tags_filter",
+      "type": "checkbox"
+    },
+    {
       "caption": "Show price range filter",
       "default": true,
       "key": "show_price_range_filter",
