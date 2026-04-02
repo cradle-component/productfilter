@@ -6,13 +6,13 @@
     {
       "caption": "Show filter",
       "default": true,
-      "key": "show_filter",
+      "key": "prodFilter_show",
       "type": "checkbox"
     },
     {
       "caption": "Filter orientation",
       "default": "horizontal",
-      "key": "filter_orientation",
+      "key": "prodFilter_orientation",
       "options": [
         {
           "caption": "Horizontal",
@@ -28,25 +28,25 @@
     {
       "caption": "Show Tags filter",
       "default": true,
-      "key": "show_tags_filter",
+      "key": "prodFilter_show_tags",
       "type": "checkbox"
     },
     {
       "caption": "Show Vendor filter",
       "default": true,
-      "key": "show_vendor_filter",
+      "key": "prodFilter_show_vendor",
       "type": "checkbox"
     },
     {
-      "caption": "Show group tags filter",
+      "caption": "Show Group Tags filter",
       "default": true,
-      "key": "show_group_tags_filter",
+      "key": "prodFilter_show_group_tags",
       "type": "checkbox"
     },
     {
-      "caption": "Show price range filter",
+      "caption": "Show Price Range filter",
       "default": true,
-      "key": "show_price_range_filter",
+      "key": "prodFilter_show_price_range",
       "type": "checkbox"
     }
   ],

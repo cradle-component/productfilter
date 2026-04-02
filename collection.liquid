@@ -3,32 +3,75 @@
         <h1>{{ meta.h1 }}</h1>
         <div class="{{ collection.format }}">{{ collection.html }}</div>       
     </div>
+   {% if settings.prodFilter_show %}  
+    <button class="toggle-filter-button btn lg:hidden" onclick="toggleFilter()">Filter</button>
     
-    <button class="toggle-filter-button btn lg:hidden" onclick="toggleFilter()">Toggle Filter</button>
-    
-    {% if settings.filter_orientation == "horizontal" %}
+
+
+    {% if settings.prodFilter_orientation == "horizontal" %}
         <div id="product-filter-wrapper" class="flex flex-col gap-4">
             
-    {% elsif settings.filter_orientation == "vertical" %}
+    {% elsif settings.prodFilter_orientation == "vertical" %}
         <div id="product-filter-wrapper" class="flex flex-col lg:flex-row gap-4">
             
     {% endif %}
     
+            <div class="active-filters lg:hidden">
+                <ul class="active-filters-list">
+                </ul>
+            </div>
+            
             <div id="filter" class="mt-8 hidden lg:block">
-        	    {% include 'productFilter' %}
+                <div class="filter-content pb-24"> 
+            	    {% include 'productFilter' %}
+                </div>
+                
+                
         	</div>
         	    
+    {% endif %}
+    
+    
         	<div id="product-grid" class="mt-10 grid {{ settings.colProductCount | def:"grid-cols-2 md:grid-cols-2 lg:grid-cols-4" }} gap-4">
         	{% for product in collection.products %}
         	    {% include 'productCard' %}
         	{% endfor %}
     	    </div>
         </div>
+        <div id="filter-overlay" class="hidden" onclick="toggleFilter()"></div>
 </section>
+<style>
+    #filter-overlay {
+        position: absolute;
+        z-index: 900;
+        inset: 0;
+        background: #00000040;
+        backdrop-filter: blur(10px);
+    }
+    
+    
+</style>
 <script>
     function toggleFilter() {
-        const filter = document.querySelector("#filter");
-      
-        filter.classList.toggle("hidden");
+    const filter = document.querySelector("#filter");
+    const overlay = document.querySelector("#filter-overlay");
+    const body = document.body;
+
+
+    const isOpen = filter.classList.contains("is-open");
+
+    if (!isOpen) {
+
+        filter.classList.add("is-open");
+        filter.classList.remove("hidden"); 
+        overlay?.classList.remove("hidden");
+        body.style.overflow = "hidden";
+    } else {
+
+        filter.classList.remove("is-open");
+        filter.classList.add("hidden"); 
+        overlay?.classList.add("hidden");
+        body.style.overflow = "";
     }
+}
 </script>

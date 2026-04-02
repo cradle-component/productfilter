@@ -1,5 +1,4 @@
 {% assign maxPrice = collection.productPriceMax %}
-
 {% assign selectedTagsString = "," %}
 {% assign selectedVendorsString = "," %}
 {% assign selectedPriceMinimum = "" %}
@@ -58,14 +57,15 @@
                 </g>
                 </svg>
                Filter
+            <span class="close-button lg:hidden ml-auto" onclick="toggleFilter()">X</span>
             </div>
-    <form action="{{ collection.url }}" method="get" id="product-filters" class="filters flex {% if settings.filter_orientation == "vertical"%}flex-col {% endif %} flex-wrap" >
+    <form action="{{ collection.url }}" method="get" id="product-filters" class="filters flex {% if settings.prodFilter_orientation == "vertical"%}flex-col {% endif %}" >
     
-    {%if settings.show_tags_filter %}
+    {%if settings.prodFilter_show_tags %}
     <div id="tags-wrapper">
-        <fieldset class="flex {% if settings.filter_orientation == "vertical"%}flex-col{% else %} flex-wrap {% endif %} mb-2">
+        <fieldset class="flex {% if settings.prodFilter_orientation == "vertical"%}flex-col{% else %} flex-wrap {% endif %} mb-2">
             {% assign usedTagsTracker = "," %}
-            {% if settings.filter_orientation == "horizontal"%}
+            {% if settings.prodFilter_orientation == "horizontal"%}
             <details class="dropdown" name="filter-dropdown">
               <summary class="btn m-1">
                 Tags
@@ -95,13 +95,13 @@
     </div>
     {% endif %}
     
-    {%if settings.show_vendor_filter %}
+    {%if settings.prodFilter_show_vendor %}
     <div id="vendor-wrapper">
-        {% if settings.filter_orientation == "vertical"%}<div class="filter-header">Vendors</div> {% endif %}
+        {% if settings.prodFilter_orientation == "vertical"%}<div class="filter-header">Vendors</div> {% endif %}
         
-        <fieldset class="flex flex-col {% if settings.filter_orientation == "horizontal"%} lg:flex-row {% endif%}  mb-2">
+        <fieldset class="flex flex-col {% if settings.prodFilter_orientation == "horizontal"%} lg:flex-row {% endif%}  mb-2">
            
-           {% if settings.filter_orientation == "horizontal"%}
+           {% if settings.prodFilter_orientation == "horizontal"%}
            <details class="dropdown" name="filter-dropdown">
               <summary class="btn m-1">
                   Vendors
@@ -112,7 +112,7 @@
                 {% for vendor in collection.productVendors %}
                     {% assign vendorValue = vendor | strip %}
                     {% assign vendorSearchPattern = "," | append: vendorValue | append: "," %}
-                    <label class="capitalize p-2" {% if settings.filter_orientation == "horizontal" %} {% endif %}>
+                    <label class="capitalize p-2" {% if settings.prodFilter_orientation == "horizontal" %} {% endif %}>
                       <input type="checkbox" name="vendor" value="{{ vendorValue | split: " " | join: "+" }}" {% if selectedVendorsString contains vendorSearchPattern %}checked{% endif %}>
                       {{ vendor | t:"collection" }}
                     </label>
@@ -124,7 +124,7 @@
     </div>
     
     
-    {% if settings.show_group_tags_filter %}
+    {% if settings.prodFilter_show_group_tags %}
     {% assign groups = '' %}
 
     {% for tag in collection.productTags %}
@@ -141,12 +141,12 @@
     
     <div class="filter-wrapper">
     
-    {% if settings.filter_orientation == "vertical" %}    
+    {% if settings.prodFilter_orientation == "vertical" %}    
         <div class="filter-header">{{ group | capitalize }}</div>
     {% endif %}
     
-      <fieldset class="flex {% if settings.filter_orientation == "vertical"%}flex-col{% else %} flex-wrap {% endif %} mb-2">
-      {% if settings.filter_orientation == "horizontal" %}
+      <fieldset class="flex {% if settings.prodFilter_orientation == "vertical"%}flex-col{% else %} flex-wrap {% endif %} mb-2">
+      {% if settings.prodFilter_orientation == "horizontal" %}
       <details class="dropdown" name="filter-dropdown">
         <summary class="btn m-1">
           {{ group | capitalize }}
@@ -183,8 +183,8 @@
     {% endif %}
     
     
-    {%if settings.show_price_range_filter %} 
-    {%if settings.filter_orientation == "horizontal" %} 
+    {%if settings.prodFilter_show_price_range %} 
+    {%if settings.prodFilter_orientation == "horizontal" %} 
     
     <details class="dropdown" name="filter-dropdown">
         <summary class="btn m-1">
@@ -229,23 +229,29 @@
         </details>
     {% endif %}
         
-        {% if settings.filter_orientation == "vertical" %}
+        {% if settings.prodFilter_orientation == "vertical" %}
         <div id="filter-buttons" class="flex justify-between pb-4">
             <button id="submit-filter" type="submit" class="btn">Filtrera</button>
             <a href="{{ request.path }}" class="btn">{{ 'Rensa filter' | t:'collection' }}</a>
         </div>
         {% endif %}
+        <div class="filter-sticky-footer lg:hidden">
+            <button class="btn-primary-show-products" {% if settings.prodFilter_orientation == "horizontal"%} type="button" onclick="toggleFilter()" {% else %} type="submit" {% endif %}>
+                {{ "Visa produkter" | t:"collection"}}
+            </button>
+        </div>
 </form>
 
-{% if settings.filter_orientation == "horizontal"%}
-<div id="active-filters">
-    <ul id="active-filters-list">
+{% if settings.prodFilter_orientation == "horizontal"%}
+<div class="active-filters hidden lg:block">
+    <ul class="active-filters-list">
         
     </ul>
 </div>
 {% endif %}
 
 <style>
+
     <!-- price range slider styling -->
     .price-range-wrapper {
         max-width: 300px;
@@ -386,37 +392,153 @@
         font-size: 1.25rem;
         width: 100%;
         padding: .5rem 0 .5rem .5rem;
-        margin-bottom: .75rem;
+        margin-top: .75rem;
         background: #ffffff00;
-        box-shadow: 1px 1px 3px #00000020;
+        /*box-shadow: 1px 1px 3px #00000020;*/
+        
+        &:first-child {
+            margin-top: 0;
+        }
+    }
+    
+    .close-button {
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+    }
+    .close-button:hover {
+        transition: background 0.3 ease;
+        background: #ccc;
     }
     #tags-wrapper, #vendor-wrapper {
         height: fit-content;
     }
     
     
-    @media(max-width: 1024px) {
-        #product-filter-wrapper {
-            position: relative;
-        }
+    @media (max-width: 1023px) {
+      #filter {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100dvh;
+        background: white;
+        z-index: 1000;
+        margin-top: 0;
+        padding: 2rem;
+        overflow-y: auto;
+        
+       
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+      }
+      
+      #filter .filter-wrapper {
+          width: 100%;
+      }
+      
+      #filter form {
+          flex-direction: column;
+      }
+      
+      #filter summary, #filter details {
+          width: 100%;
+      }
+    
+      #filter.is-open {
+        transform: translateX(0);
+      }
+      
+
+      @media (min-width: 768px) {
         #filter {
-            position: absolute;
-            background: var(--color-base-100);
-            z-index: 1;
+          max-width: 400px;
+          box-shadow: 2px 0 15px rgba(0,0,0,0.1);
         }
+  
+      }
+      #filter ul.menu {
+          max-width: 100%;
+      }
+      
+      
+      
     }
     
-    @media(max-width: 640px) {
-        #filter{
-            margin-left: -10px;
-            width: calc(100% + 20px);
+    @media (min-width: 1024px) {
+        #product-filters {
+            overflow-x: auto;
+            overflow-y: visible;
+            {% if settings.prodFilter_orientation == "horizontal" %}
+            padding-block: 1rem; 
+            {% endif %}
+            /*margin-bottom: -250px;*/
+    
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
         }
+        
+        #product-filters:has(details[open]) {
+            padding-bottom: 350px;
+            margin-bottom: -350px;
+            overflow: hidden;
+            
+        }
+    
+        #product-filters > div, 
+        #product-filters > fieldset {
+            flex-shrink: 0; 
+        }
+    
+        .dropdown-content {
+            position: absolute;
+            z-index: 50;
+        }
+        
+        {% if settings.prodFilter_orientation == "horizontal" %}
+        #price-input {
+            min-width: 20rem;
+            margin-left: -15rem;
+        }
+        {% endif %}
     }
    
     
+     /* Active Filters */
+        
+        .active-filters-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .active-filters-list li {
+            margin: 0; padding: 0;
+        }
+        
+        .active-filters-list li span {
+            background-color: #ddd;
+            padding: 0.35rem 1rem;
+            border-radius: 50px 0 0 50px;
+        }
+        
+        .active-filters-list li button {
+            background-color: #eee;
+            padding: 0.1rem;
+            border-radius: 0 50px 50px 0;
+            padding-inline: 0.35rem 0.5rem;
+            cursor: pointer;
+        }
+        .active-filters-list li button:hover {
+            background-color: #ddd;
+        }
+        
+        .active-filters-list a {
+            font-size: 0.95rem;
+        }
+        
     
-    
-    {% if settings.filter_orientation == "horizontal" %}
+    {% if settings.prodFilter_orientation == "horizontal" %}
         #filter-buttons {
             margin-top: 1rem;
             padding: 0;
@@ -433,6 +555,7 @@
                 display: none;
             }
         }
+        
         #product-filters label:has(input[type="checkbox"]:checked) {
 
             outline: 2px solid #00000050;
@@ -458,9 +581,6 @@
             margin-block: 15px;
         }
         
-        
-        
-        
         .price-filter input, price-filter--nojs label input {
           width: 30%;
           height: 100%;
@@ -477,12 +597,7 @@
         
         
         #product-filters {
-            gap: 2rem;
-        }
-        
-        #tags-wrapper, #vendor-wrapper {
-            margin-right: 1rem;
-            max-width: 24rem;
+            gap: 1.5rem;
         }
         
         #price-input {
@@ -491,40 +606,9 @@
         }
         
         
-        /* Active Filters */
-        
-        #active-filters-list {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
-        }
-        
-        #active-filters-list li {
-            margin: 0; padding: 0;
-        }
-        
-        #active-filters-list li span {
-            background-color: #ccc;
-            padding: 0.35rem 1rem;
-            border-radius: 50px 0 0 50px;
-        }
-        
-        #active-filters-list li button {
-            background-color: #ccc;
-            padding: 0.1rem;
-            border-radius: 0 50px 50px 0;
-            padding-inline: 0.35rem 0.5rem;
-            cursor: pointer;
-        }
-        #active-filters-list li button:hover {
-            background-color: #f1f1f1;
-        }
-        
-        #active-filters-list a {
-            font-size: 0.95rem;
-        }
+       
     
-    {% elsif settings.filter_orientation == "vertical" %}
+    {% elsif settings.prodFilter_orientation == "vertical" %}
         #product-filters {
             gap: 0;
             min-width: 16rem;
@@ -578,6 +662,28 @@
         }
     {% endif %}
     
+    .filter-sticky-footer {
+        position: sticky;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 1rem;
+        background: white;
+        border-top: 1px solid #eee;
+        box-shadow: 0 -10px 15px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-primary-show-products {
+        width: 100%;
+        background-color: #000; 
+        color: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-weight: bold;
+        text-align: center;
+        cursor: pointer;
+    }
+    
 
 </style>
 
@@ -596,6 +702,7 @@
   const priceInputs = form.querySelectorAll('.price-range-input input');
   const rangeInputs = form.querySelectorAll('.range-input input');
   const rangeProgress = form.querySelector('.slider .progress');
+  let priceFilterActive = Boolean((inputMin?.value || '').trim() || (inputMax?.value || '').trim());
 
 
   
@@ -604,12 +711,7 @@
         .map(i => i.value);
 
   const isGroupLikeValue = (value) => typeof value === "string" && value.includes("_");
-  
-  function toggleFilter() {
-      const filter = document.querySelector("#filter");
-      
-      filter.classList.toggle("hidden");
-  }
+
   
   
     function buildParams() {
@@ -643,52 +745,21 @@
           params.set("tags", mergedTags.join(","));
         }
 
-        const minValue = inputMin?.value || rangeMin?.value;
-        const maxValue = inputMax?.value || rangeMax?.value;
+        if (priceFilterActive) {
+          const minValue = (inputMin?.value || rangeMin?.value || '').trim();
+          const maxValue = (inputMax?.value || rangeMax?.value || '').trim();
 
-        if (minValue > 0) {
-          params.set("price-min", minValue);
-        }
+          if (minValue !== '' && Number(minValue) > 0) {
+            params.set("price-min", minValue);
+          }
 
-        if (maxValue < rangeMax.max) {
-          params.set("price-max", maxValue);
+          if (maxValue !== '' && Number(maxValue) < Number(rangeMax.max)) {
+            params.set("price-max", maxValue);
+          }
         }
 
         return params;
     }
-  
-  {%if settings.filter_orientation == "horizontal" %}
-
-    const cache = new Map();
-    let currentController;
-    let debounceTimer;
-    let lastQueryString = "";
-    
-    const DEBOUNCE_DELAY = 250;
-    
-    
-    
-    document.addEventListener("click", (e) => {
-        const allDetails = document.querySelectorAll("details[open]");
-        
-        allDetails.forEach( details => {
-            if(!details.contains(e.target)) {
-                details.removeAttribute("open")
-            }
-        })
-    })
-    
-    document.addEventListener("click", (e) => {
-        const allDetails = document.querySelectorAll("details[open]");
-        
-        allDetails.forEach(details => {
-            if (!details.contains(e.target)) { 
-                details.removeAttribute("open");
-            }
-        });
-    });
- 
-    
     
     // active filters ------------------
     
@@ -737,32 +808,34 @@
     }
     
     function renderActiveFilters() {
-        const container = document.querySelector("#active-filters-list");
-        if(!container) return;
-        
-        const activeFilters = getActiveFilterValues();
-        container.innerHTML = '';
-        if (activeFilters.length === 0) {
-            
-            return;
-        }
-        
-        container.innerHTML = activeFilters.map(filter => `
-            <li data-param-key="${filter.paramKey}"
-                data-original-value="${filter.originalValue || ''}"
-                data-is-price="${filter.isPrice || false}"
-                data-price-min="${filter.minValue || ''}"
-                data-price-max="${filter.maxValue || ''}"
-            >
-                <span class="filter-label capitalize">${filter.displayValue}</span>
-                <button class="remove-filter" aria-label="Ta bort filter">X</button>
-            </li>
-        `).join('');
-        
-        if(activeFilters.length !== 0) {
-            container.innerHTML += "<a href='{{ request.path }}'>Rensa filter</a>"
-        }
+    const containers = document.querySelectorAll(".active-filters-list");
+    if (containers.length === 0) return;
+    
+    const activeFilters = getActiveFilterValues();
+    
+    if (activeFilters.length === 0) {
+        containers.forEach(container => container.innerHTML = '');
+        return;
     }
+    
+    const filtersHtml = activeFilters.map(filter => `
+        <li data-param-key="${filter.paramKey}"
+            data-original-value="${filter.originalValue || ''}"
+            data-is-price="${filter.isPrice || false}"
+            data-price-min="${filter.minValue || ''}"
+            data-price-max="${filter.maxValue || ''}"
+        >
+            <span class="filter-label capitalize">${filter.displayValue}</span>
+            <button class="remove-filter" aria-label="Ta bort filter">X</button>
+        </li>
+    `).join('');
+    
+    const clearAllLink = `<a href="{{ request.path }}" class="clear-all-link">Rensa filter</a>`;
+
+    containers.forEach(container => {
+        container.innerHTML = filtersHtml + clearAllLink;
+    });
+}
     
     function findCheckboxByValue(value) {
         const checkboxes = form.querySelectorAll('input[type="checkbox"]');
@@ -775,33 +848,73 @@
     }
     
     function removeFilter() {
-        document.body.addEventListener('click', (e) => {
-            const removeBtn = e.target.closest('.remove-filter');
-            if (!removeBtn) return;
+      document.body.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-filter');
+        if (!removeBtn) return;
             
-            const li = removeBtn.closest('li')
-            const isPrice = li.dataset.isPrice === 'true';
+        const li = removeBtn.closest('li')
+        const isPrice = li.dataset.isPrice === 'true';
             
-            if (isPrice) {
+        if (isPrice) {
                 
-                if (inputMin) inputMin.value = '';
-                if (inputMax) inputMax.value = '';
-                if (rangeMin) rangeMin.value = rangeMin.min;
-                if (rangeMax) rangeMax.value = rangeMax.max;
-              } else {
-                const originalValue = li.dataset.originalValue;
-                const checkbox = findCheckboxByValue(originalValue);
-                if (checkbox) {
-                    checkbox.checked = false;
-                }
-              }
+          if (inputMin) inputMin.value = '';
+          if (inputMax) inputMax.value = '';
+          if (rangeMin) rangeMin.value = rangeMin.min;
+          if (rangeMax) rangeMax.value = rangeMax.max;
+          priceFilterActive = false;
+          } else {
+          const originalValue = li.dataset.originalValue;
+          const checkbox = findCheckboxByValue(originalValue);
+          if (checkbox) {
+            checkbox.checked = false;
+          }
+          }
               
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(performUpdate, DEBOUNCE_DELAY);            
-        })
+        if (typeof performUpdate === 'function') {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(performUpdate, DEBOUNCE_DELAY);
+        } else {
+          form.submit();
+        }
+      })
     }
     
     // END active filters ------------------
+  
+  {%if settings.prodFilter_orientation == "horizontal" %}
+
+    const cache = new Map();
+    let currentController;
+    let debounceTimer;
+    let lastQueryString = "";
+    
+    const DEBOUNCE_DELAY = 250;
+    
+    
+    
+    document.addEventListener("click", (e) => {
+        const allDetails = document.querySelectorAll("details[open]");
+        
+        allDetails.forEach( details => {
+            if(!details.contains(e.target)) {
+                details.removeAttribute("open")
+            }
+        })
+    })
+    
+    document.addEventListener("click", (e) => {
+        const allDetails = document.querySelectorAll("details[open]");
+        
+        allDetails.forEach(details => {
+            if (!details.contains(e.target)) { 
+                details.removeAttribute("open");
+            }
+        });
+    });
+ 
+    
+    
+    
     
     
     const findGrid = (root) =>
@@ -853,6 +966,7 @@
       if (inputMax) inputMax.value = max;
       if (rangeMin) rangeMin.value = min || rangeMin.min;
       if (rangeMax) rangeMax.value = max || rangeMax.max;
+      priceFilterActive = Boolean(min || max);
     
       // Uppdatera slider visuellt
       if (rangeProgress && rangeMin && rangeMax) {
@@ -950,6 +1064,11 @@
 
 {% endif %}
 
+  {% unless settings.prodFilter_orientation == "horizontal" %}
+  renderActiveFilters();
+  removeFilter();
+  {% endunless %}
+
   // Ta bort noJS name-attribut
   document.querySelectorAll('.price-filter--nojs input[name]').forEach(input => {
     input.removeAttribute('name');
@@ -983,6 +1102,7 @@
 
     priceInputs.forEach((input) => {
       input.addEventListener('input', () => {
+        priceFilterActive = true;
         const minPrice = parseInt(priceInputs[0].value) || 0;
         const maxPrice = parseInt(priceInputs[1].value) || 0;
 
@@ -998,6 +1118,7 @@
     });
 
     const handleRangeInput = (e) => {
+      priceFilterActive = true;
       const minVal = parseInt(rangeInputs[0].value);
       const maxVal = parseInt(rangeInputs[1].value);
 
