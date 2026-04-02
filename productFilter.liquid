@@ -745,7 +745,7 @@
           params.set("tags", mergedTags.join(","));
         }
 
-        if (priceFilterActive) {
+        if (priceFilterActive && rangeMax) {
           const minValue = (inputMin?.value || rangeMin?.value || '').trim();
           const maxValue = (inputMax?.value || rangeMax?.value || '').trim();
 
@@ -853,6 +853,7 @@
         if (!removeBtn) return;
             
         const li = removeBtn.closest('li')
+        if (!li) return;
         const isPrice = li.dataset.isPrice === 'true';
             
         if (isPrice) {
@@ -895,16 +896,6 @@
     document.addEventListener("click", (e) => {
         const allDetails = document.querySelectorAll("details[open]");
         
-        allDetails.forEach( details => {
-            if(!details.contains(e.target)) {
-                details.removeAttribute("open")
-            }
-        })
-    })
-    
-    document.addEventListener("click", (e) => {
-        const allDetails = document.querySelectorAll("details[open]");
-        
         allDetails.forEach(details => {
             if (!details.contains(e.target)) { 
                 details.removeAttribute("open");
@@ -912,10 +903,6 @@
         });
     });
  
-    
-    
-    
-    
     
     const findGrid = (root) =>
       root.querySelector("#product-grid") ||
